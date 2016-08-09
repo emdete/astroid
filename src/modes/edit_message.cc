@@ -113,7 +113,7 @@ namespace Astroid {
     /* set up message id and random server name for editor */
     id = edit_id++;
 
-    ustring _mid;
+    ustring _mid = "";
 
 # ifndef DISABLE_PLUGINS
     if (!astroid->plugin_manager->astroid_extension->generate_mid (_mid)) {
@@ -137,13 +137,13 @@ namespace Astroid {
 
       _mid = ustring::compose ("%1.%2.%3@%4", msg_time, _mid, user, hostname);
 
-      if (msg_id == "") {
-        msg_id = _mid;
-      }
-
 # ifndef DISABLE_PLUGINS
     }
 # endif
+
+    if (msg_id == "") {
+      msg_id = _mid;
+    }
 
     log << info << "em: msg id: " << msg_id << endl;
 
