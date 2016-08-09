@@ -114,6 +114,7 @@ namespace Astroid {
     id = edit_id++;
 
     ustring _mid = "";
+    msg_time = time(0);
 
 # ifndef DISABLE_PLUGINS
     if (!astroid->plugin_manager->astroid_extension->generate_mid (_mid)) {
@@ -132,7 +133,6 @@ namespace Astroid {
       UstringUtils::trim (user);
       if (user.empty ()) user = "astroid";
 
-      msg_time = time(0);
       _mid = UstringUtils::random_alphanumeric (10);
 
       _mid = ustring::compose ("%1.%2.%3@%4", msg_time, _mid, user, hostname);
