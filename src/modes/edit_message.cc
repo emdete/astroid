@@ -113,27 +113,37 @@ namespace Astroid {
     /* set up message id and random server name for editor */
     id = edit_id++;
 
-    char _hostname[1024];
-    _hostname[1023] = 0;
-    gethostname (_hostname, 1023);
+    ustring _mid;
 
-    ustring hostname = astroid->config ().get <string> ("mail.message_id_fqdn");
-    UstringUtils::trim (hostname);
-    if (hostname.empty ()) hostname = _hostname;
+# ifndef DISABLE_PLUGINS
+    if (!astroid->plugin_manager->astroid_extension->generate_mid (_mid)) {
+# endif
+
+      char _hostname[1024];
+      _hostname[1023] = 0;
+      gethostname (_hostname, 1023);
+
+      ustring hostname = astroid->config ().get <string> ("mail.message_id_fqdn");
+      UstringUtils::trim (hostname);
+      if (hostname.empty ()) hostname = _hostname;
 
 
-    ustring user = astroid->config ().get<string> ("mail.message_id_user");
-    UstringUtils::trim (user);
-    if (user.empty ()) user = "astroid";
+      ustring user = astroid->config ().get<string> ("mail.message_id_user");
+      UstringUtils::trim (user);
+      if (user.empty ()) user = "astroid";
 
-    msg_time = time(0);
-    ustring _mid = UstringUtils::random_alphanumeric (10);
+      msg_time = time(0);
+      _mid = UstringUtils::random_alphanumeric (10);
 
-    _mid = ustring::compose ("%1.%2.%3@%4", msg_time, _mid, user, hostname);
+      _mid = ustring::compose ("%1.%2.%3@%4", msg_time, _mid, user, hostname);
 
-    if (msg_id == "") {
-      msg_id = _mid;
+      if (msg_id == "") {
+        msg_id = _mid;
+      }
+
+# ifndef DISABLE_PLUGINS
     }
+# endif
 
     log << info << "em: msg id: " << msg_id << endl;
 
