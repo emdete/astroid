@@ -32,14 +32,13 @@
 # include "modes/forward_message.hh"
 # include "modes/raw_message.hh"
 # include "modes/thread_index/thread_index.hh"
-# include "log.hh"
 # include "theme.hh"
 
 using namespace std;
 
 namespace Astroid {
 
-  ThreadView::ThreadView (MainWindow * mw) : Mode (mw) { // {{{
+  ThreadView::ThreadView (MainWindow * mw) : Mode (mw) { //
     const ptree& config = astroid->config ("thread_view");
     indent_messages = config.get<bool> ("indent_messages");
     open_html_part_external = config.get<bool> ("open_html_part_external");
@@ -81,11 +80,11 @@ namespace Astroid {
     g_object_get (G_OBJECT (attributes), "device-dpi", &dpi, NULL);
     g_object_get (G_OBJECT (attributes), "device-pixel-ratio", &dpr, NULL);
 
-    log << debug << "web: dpi: " << dpi << ", dpr: " << dpr << endl;
+    LOG (debug) << "web: dpi: " << dpi << ", dpr: " << dpr;
     auto win = get_screen ();
     double gdpi = win->get_resolution ();
 
-    log << debug << "gdk: dpi: " << gdpi << endl;
+    LOG (debug) << "gdk: dpi: " << gdpi;
 
     g_object_set (G_OBJECT (attributes), "device-dpi", (int)gdpi, NULL);
 
@@ -94,11 +93,11 @@ namespace Astroid {
     g_object_get (G_OBJECT (attributes), "device-dpi", &dpi, NULL);
     g_object_get (G_OBJECT (attributes), "device-pixel-ratio", &dpr, NULL);
 
-    log << debug << "web: dpi: " << dpi << ", dpr: " << dpr << endl;
+    LOG (debug) << "web: dpi: " << dpi << ", dpr: " << dpr;
 
     bool valid;
     g_object_get (G_OBJECT (attributes), "valid", &valid, NULL);
-    log << debug << "web: valid: " << valid << endl;
+    LOG (debug) << "web: valid: " << valid;
     */
 
     websettings = WEBKIT_WEB_SETTINGS (webkit_web_settings_new ());
@@ -190,10 +189,10 @@ namespace Astroid {
         sigc::mem_fun (this, &ThreadView::on_thread_updated));
   }
 
-  // }}}
+  //
 
-  ThreadView::~ThreadView () { // {{{
-    log << debug << "tv: deconstruct." << endl;
+  ThreadView::~ThreadView () { //
+    LOG (debug) << "tv: deconstruct.";
     // TODO: possibly still some errors here in paned mode
     //g_object_unref (webview); // probably garbage collected since it has a parent widget
     //g_object_unref (websettings);
@@ -207,9 +206,9 @@ namespace Astroid {
 # endif
   }
 
-  // }}}
+  //
 
-  /* navigation requests {{{ */
+  /* navigation requests  */
   extern "C" void ThreadView_resource_request_starting (
       WebKitWebView         *web_view,
       WebKitWebFrame        *web_frame,
@@ -265,7 +264,7 @@ namespace Astroid {
     /* get plugin allowed uris */
     std::vector<ustring> puris = plugins->get_allowed_uris ();
     if (puris.size() > 0) {
-      log << debug << "tv: plugin allowed uris: " << VectorUtils::concat_tags (puris) << endl;
+      LOG (debug) << "tv: plugin allowed uris: " << VectorUtils::concat_tags (puris);
       allowed_uris.insert (allowed_uris.end (), puris.begin (), puris.end ());
     }
 # endif
@@ -279,17 +278,17 @@ namespace Astroid {
           }) != allowed_uris.end ())
     {
 
-      /* log << debug << "tv: request: allowed: " << uri << endl; */
+      /* LOG (debug) << "tv: request: allowed: " << uri; */
       return; // yes
 
     } else {
       if (show_remote_images) {
         // TODO: use an approved-url (like geary) to only allow imgs, not JS
         //       or other content.
-        log << warn  << "tv: remote images allowed, approving _all_ requests: " << uri << endl;
+        LOG (warn) << "tv: remote images allowed, approving _all_ requests: " << uri;
         return; // yes
       } else {
-        log << debug << "tv: request: denied: " << uri << endl;
+        LOG (debug)<< "tv: request: denied: " << uri;
         webkit_network_request_set_uri (request, "about:blank"); // no
       }
     }
@@ -365,7 +364,7 @@ namespace Astroid {
           request );
 
       ustring uri (uri_c);
-      log << info << "tv: navigating to: " << uri << endl;
+      LOG (info) << "tv: navigating to: " << uri;
 
       ustring scheme = Glib::uri_parse_scheme (uri);
 
@@ -384,28 +383,28 @@ namespace Astroid {
 
       } else {
 
-        log << error << "tv: unknown uri scheme. not opening." << endl;
+        LOG (error) << "tv: unknown uri scheme. not opening.";
       }
 
       return true;
 
     } else {
-      log << info << "tv: navigation action: " <<
-        webkit_web_navigation_action_get_reason (navigation_action) << endl;
+      LOG (info) << "tv: navigation action: " <<
+        webkit_web_navigation_action_get_reason (navigation_action);
 
 
       const gchar * uri_c = webkit_network_request_get_uri (
           request );
 
       ustring uri (uri_c);
-      log << info << "tv: navigating to: " << uri << endl;
+      LOG (info) << "tv: navigating to: " << uri;
     }
 
     return false;
   }
 
   void ThreadView::open_link (ustring uri) {
-    log << debug << "tv: opening: " << uri << endl;
+    LOG (debug) << "tv: opening: " << uri;
 
     Glib::Threads::Thread::create (
         sigc::bind (
@@ -414,7 +413,7 @@ namespace Astroid {
 
   void ThreadView::do_open_link (ustring uri) {
     vector<string> args = { open_external_link.c_str(), uri.c_str () };
-    log << debug << "tv: spawning: " << args[0] << ", " << args[1] << endl;
+    LOG (debug) << "tv: spawning: " << args[0] << ", " << args[1];
     string stdout;
     string stderr;
     int    exitcode;
@@ -429,29 +428,29 @@ namespace Astroid {
                         );
 
     } catch (Glib::SpawnError &ex) {
-      log << error << "tv: exception while opening uri: " <<  ex.what () << endl;
+      LOG (error) << "tv: exception while opening uri: " <<  ex.what ();
     }
 
     ustring ustdout = ustring(stdout);
     for (ustring &l : VectorUtils::split_and_trim (ustdout, ustring("\n"))) {
 
-      log << debug << l << endl;
+      LOG (debug) << l;
     }
 
     ustring ustderr = ustring(stderr);
     for (ustring &l : VectorUtils::split_and_trim (ustderr, ustring("\n"))) {
 
-      log << debug << l << endl;
+      LOG (debug) << l;
     }
 
     if (exitcode != 0) {
-      log << error << "tv: open link exited with code: " << exitcode << endl;
+      LOG (error) << "tv: open link exited with code: " << exitcode;
     }
   }
 
-  /* end navigation requests }}} */
+  /* end navigation requests  */
 
-  /* message loading {{{ */
+  /* message loading  */
   /* is this callback setup safe?
    *
    * http://stackoverflow.com/questions/2068022/in-c-is-it-safe-portable-to-use-static-member-function-pointer-for-c-api-call
@@ -477,10 +476,10 @@ namespace Astroid {
       GParamSpec *      /* p */)
   {
     WebKitLoadStatus ev = webkit_web_view_get_load_status (webview);
-    log << debug << "tv: on_load_changed: " << ev << endl;
+    LOG (debug) << "tv: on_load_changed: " << ev;
     switch (ev) {
       case WEBKIT_LOAD_FINISHED:
-        log << debug << "tv: load finished." << endl;
+        LOG (debug) << "tv: load finished.";
         {
 
           /* load css style */
@@ -574,7 +573,7 @@ namespace Astroid {
           container = WEBKIT_DOM_HTML_DIV_ELEMENT(webkit_dom_document_get_element_by_id (d, "message_container"));
 
           if (container == NULL) {
-            log << warn << "render: could not find container!" << endl;
+            LOG (warn) << "render: could not find container!";
           }
 
 
@@ -596,7 +595,7 @@ namespace Astroid {
   }
 
   void ThreadView::load_thread (refptr<NotmuchThread> _thread) {
-    log << info << "tv: load thread: " << _thread->thread_id << endl;
+    LOG (info) << "tv: load thread: " << _thread->thread_id;
     thread = _thread;
 
     set_label (thread->thread_id);
@@ -626,7 +625,7 @@ namespace Astroid {
     if (!edit_mode) { // edit mode doesn't show tags
       if (me == Message::MessageChangedEvent::MESSAGE_TAGS_CHANGED) {
         if (m->in_notmuch) {
-          log << debug << "tv: got message updated." << endl;
+          LOG (debug) << "tv: got message updated.";
           refptr<Message> rm = refptr<Message> (m);
           rm->reference ();
 
@@ -639,7 +638,7 @@ namespace Astroid {
   void ThreadView::on_thread_updated (Db * db, ustring thread_id) {
     if (!edit_mode) { // edit mode doesn't show tags
       if (thread && thread_id == thread->thread_id) {
-        log << debug << "tv: got thread updated." << endl;
+        LOG (debug) << "tv: got thread updated.";
         /* thread was updated, check for:
          * - changed tags
          * - check if something should be done becasue of changed tags
@@ -705,13 +704,13 @@ namespace Astroid {
     g_object_unref (d);
   }
 
-  /* end message loading }}} */
+  /* end message loading  */
 
-  /* rendering {{{ */
+  /* rendering  */
 
-  /* general message adding and rendering {{{ */
+  /* general message adding and rendering  */
   void ThreadView::render () {
-    log << info << "render: loading html.." << endl;
+    LOG (info) << "render: loading html..";
     if (container) g_object_unref (container);
     container = NULL;
     wk_loaded = false;
@@ -727,9 +726,9 @@ namespace Astroid {
   }
 
   void ThreadView::render_messages () {
-    log << debug << "render: html loaded, building messages.." << endl;
+    LOG (debug) << "render: html loaded, building messages..";
     if (!container || !wk_loaded) {
-      log << error << "tv: div container and web kit not loaded." << endl;
+      LOG (error) << "tv: div container and web kit not loaded.";
       return;
     }
 
@@ -752,7 +751,7 @@ namespace Astroid {
 
     if (!focused_message) {
       if (!candidate_startup) {
-        log << debug << "tv: no message expanded, showing newest message." << endl;
+        LOG (debug) << "tv: no message expanded, showing newest message.";
 
         focused_message = *max_element (
             mthread->messages.begin (),
@@ -815,7 +814,7 @@ namespace Astroid {
   }
 
   void ThreadView::add_message (refptr<Message> m) {
-    log << debug << "tv: adding message: " << m->mid << endl;
+    LOG (debug) << "tv: adding message: " << m->mid;
 
     ustring div_id = "message_" + m->mid;
 
@@ -883,9 +882,9 @@ namespace Astroid {
 
     g_object_unref (insert_before);
     g_object_unref (div_message);
-  } // }}}
+  } //
 
-  /* main message generation {{{ */
+  /* main message generation  */
   void ThreadView::set_message_html (
       refptr<Message> m,
       WebKitDOMHTMLElement * div_message)
@@ -1057,7 +1056,7 @@ namespace Astroid {
       create_message_part_html (m, m->root, span_body, true);
 
       /* preview */
-      log << debug << "tv: make preview.." << endl;
+      LOG (debug) << "tv: make preview..";
 
       ustring bp = m->viewable_text (false, false);
       if (static_cast<int>(bp.size()) > MAX_PREVIEW_LEN)
@@ -1079,9 +1078,9 @@ namespace Astroid {
     g_object_unref (preview);
     g_object_unref (span_body);
     g_object_unref (table_header);
-  } // }}}
+  } //
 
-  /* generating message parts {{{ */
+  /* generating message parts  */
   void ThreadView::create_message_part_html (
       refptr<Message> message,
       refptr<Chunk> c,
@@ -1096,8 +1095,8 @@ namespace Astroid {
       mime_type = "application/octet-stream";
     }
 
-    log << debug << "create message part: " << c->id << " (siblings: " << c->siblings.size() << ") (kids: " << c->kids.size() << ")" <<
-      " (attachment: " << c->attachment << ")" << " (viewable: " << c->viewable << ")" << " (mimetype: " << mime_type << ")" << endl;
+    LOG (debug) << "create message part: " << c->id << " (siblings: " << c->siblings.size() << ") (kids: " << c->kids.size() << ")" <<
+      " (attachment: " << c->attachment << ")" << " (viewable: " << c->viewable << ")" << " (mimetype: " << mime_type << ")";
 
     if (c->attachment) return;
 
@@ -1139,7 +1138,7 @@ namespace Astroid {
   {
     // <span id="body_template" class="body_part"></span>
 
-    log << debug << "create body part: " << c->id << endl;
+    LOG (debug) << "create body part: " << c->id;
 
     GError *err;
 
@@ -1154,7 +1153,7 @@ namespace Astroid {
 
     if (code_is_on) {
       if (message->is_patch ()) {
-        log << debug << "tv: message is patch, syntax highlighting." << endl;
+        LOG (debug) << "tv: message is patch, syntax highlighting.";
         body.insert (0, code_start_tag);
         body.insert (body.length()-1, code_stop_tag);
 
@@ -1183,7 +1182,7 @@ namespace Astroid {
       // add to message state
       MessageState::Element e (MessageState::ElementType::Encryption, c->id);
       state[message].elements.push_back (e);
-      log << debug << "tv: added encrypt: " << c->id << endl;
+      LOG (debug) << "tv: added encrypt: " << c->id;
 
       webkit_dom_element_set_attribute (WEBKIT_DOM_ELEMENT (encrypt_container),
         "id", e.element_id().c_str(),
@@ -1409,7 +1408,7 @@ namespace Astroid {
       }
     }
 
-    log << debug << "tv: code filter done, time: " << ((clock() - t0) * 1000 / CLOCKS_PER_SEC) << " ms." << endl;
+    LOG (debug) << "tv: code filter done, time: " << ((clock() - t0) * 1000 / CLOCKS_PER_SEC) << " ms.";
 
   }
 
@@ -1466,7 +1465,7 @@ namespace Astroid {
 
   void ThreadView::create_sibling_part (refptr<Message> message, refptr<Chunk> sibling, WebKitDOMHTMLElement * span_body) {
 
-    log << debug << "create sibling part: " << sibling->id << endl;
+    LOG (debug) << "create sibling part: " << sibling->id;
     //
     //  <div id="sibling_template" class=sibling_container">
     //      <div class="message"></div>
@@ -1484,7 +1483,7 @@ namespace Astroid {
     // add to message state
     MessageState::Element e (MessageState::ElementType::Part, sibling->id);
     state[message].elements.push_back (e);
-    log << debug << "tv: added sibling: " << state[message].elements.size() << endl;
+    LOG (debug) << "tv: added sibling: " << state[message].elements.size();
 
     webkit_dom_element_set_attribute (WEBKIT_DOM_ELEMENT (sibling_container),
       "id", e.element_id().c_str(),
@@ -1509,12 +1508,12 @@ namespace Astroid {
     g_object_unref (message_cont);
     g_object_unref (sibling_container);
     g_object_unref (d);
-  } // }}}
+  } //
 
-  /* info and warning {{{ */
+  /* info and warning  */
   void ThreadView::set_warning (refptr<Message> m, ustring txt)
   {
-    log << debug << "tv: set warning: " << txt << endl;
+    LOG (debug) << "tv: set warning: " << txt;
     ustring mid = "message_" + m->mid;
 
     WebKitDOMDocument * d = webkit_web_view_get_dom_document (webview);
@@ -1567,7 +1566,7 @@ namespace Astroid {
 
   void ThreadView::set_info (refptr<Message> m, ustring txt)
   {
-    log << debug << "tv: set info: " << txt << endl;
+    LOG (debug) << "tv: set info: " << txt;
 
     ustring mid = "message_" + m->mid;
 
@@ -1575,7 +1574,7 @@ namespace Astroid {
     WebKitDOMElement * e = webkit_dom_document_get_element_by_id (d, mid.c_str());
 
     if (e == NULL) {
-      log << warn << "tv: could not get email div." << endl;
+      LOG (warn) << "tv: could not get email div.";
     }
 
     WebKitDOMHTMLElement * info = DomUtils::select (
@@ -1604,7 +1603,7 @@ namespace Astroid {
     WebKitDOMElement * e = webkit_dom_document_get_element_by_id (d, mid.c_str());
 
     if (e == NULL) {
-      log << warn << "tv: could not get email div." << endl;
+      LOG (warn) << "tv: could not get email div.";
     }
 
     WebKitDOMHTMLElement * info = DomUtils::select (
@@ -1625,9 +1624,9 @@ namespace Astroid {
     g_object_unref (e);
     g_object_unref (d);
   }
-  /* end info and warning }}} */
+  /* end info and warning  */
 
-  /* headers {{{ */
+  /* headers  */
   void ThreadView::insert_header_date (ustring & header, refptr<Message> m)
   {
     ustring value = ustring::compose (
@@ -1715,9 +1714,9 @@ namespace Astroid {
     return (escape ? Glib::Markup::escape_text (value) : value);
   }
 
-  /* headers end }}} */
+  /* headers end  */
 
-  /* attachments {{{ */
+  /* attachments  */
   void ThreadView::set_attachment_icon (
       refptr<Message> /* message */,
       WebKitDOMHTMLElement * div_message)
@@ -1830,7 +1829,7 @@ namespace Astroid {
       // add attachment to message state
       MessageState::Element e (MessageState::ElementType::Attachment, c->id);
       state[message].elements.push_back (e);
-      log << debug << "tv: added attachment: " << state[message].elements.size() << endl;
+      LOG (debug) << "tv: added attachment: " << state[message].elements.size();
 
       webkit_dom_element_set_attribute (WEBKIT_DOM_ELEMENT (attachment_table),
         "data-attachment-id", e.element_id().c_str(),
@@ -1903,7 +1902,7 @@ namespace Astroid {
       mime_type = ustring(g_mime_content_type_to_string (c->content_type));
     }
 
-    log << debug << "tv: set attachment, mime_type: " << mime_type << ", mtype: " << _mtype << endl;
+    LOG (debug) << "tv: set attachment, mime_type: " << mime_type << ", mtype: " << _mtype;
 
     gchar * content;
     gsize   content_size;
@@ -1932,7 +1931,7 @@ namespace Astroid {
 
       } catch (Gdk::PixbufError &ex) {
 
-        log << error << "tv: could not create icon from attachmed image." << endl;
+        LOG (error) << "tv: could not create icon from attachmed image.";
 
         attachment_icon->save_to_buffer (content, content_size, "png"); // default type is png
         image_content_type = "image/png";
@@ -1963,7 +1962,7 @@ namespace Astroid {
       }
 
 
-      log << debug << "icon: " << icon_string << flush << endl;
+      LOG (debug) << "icon: " << icon_string << flush;
       */
 
       // TODO: use guessed icon
@@ -1978,9 +1977,9 @@ namespace Astroid {
         DomUtils::assemble_data_uri (image_content_type, content, content_size).c_str(), &err);
 
   }
-  /* attachments end }}} */
+  /* attachments end  */
 
-  /* marked {{{ */
+  /* marked  */
   void ThreadView::load_marked_icon (
       refptr<Message> /* message */,
       WebKitDOMHTMLElement * div_message)
@@ -2041,9 +2040,9 @@ namespace Astroid {
   }
 
 
-  // }}}
+  //
 
-  /* mime messages {{{ */
+  /* mime messages  */
   void ThreadView::insert_mime_messages (
       refptr<Message> message,
       WebKitDOMHTMLElement * div_message)
@@ -2056,7 +2055,7 @@ namespace Astroid {
       DomUtils::select (WEBKIT_DOM_NODE(div_email_container), ".body");
 
     for (refptr<Chunk> &c : message->mime_messages ()) {
-      log << debug << "create mime message part: " << c->id << endl;
+      LOG (debug) << "create mime message part: " << c->id;
       //
       //  <div id="mime_template" class=mime_container">
       //      <div class="top_border"></div>
@@ -2075,7 +2074,7 @@ namespace Astroid {
       // add attachment to message state
       MessageState::Element e (MessageState::ElementType::MimeMessage, c->id);
       state[message].elements.push_back (e);
-      log << debug << "tv: added mime message: " << state[message].elements.size() << endl;
+      LOG (debug) << "tv: added mime message: " << state[message].elements.size();
 
       webkit_dom_element_set_attribute (WEBKIT_DOM_ELEMENT (mime_container),
         "id", e.element_id().c_str(),
@@ -2110,17 +2109,17 @@ namespace Astroid {
   }
 
 
-  /* }}} */
+  /*  */
 
 
-  /* end rendering }}} */
+  /* end rendering  */
 
   bool ThreadView::on_key_press_event (GdkEventKey * event) {
     if (!ready.load ()) return true;
     else return Mode::on_key_press_event (event);
   }
 
-  void ThreadView::register_keys () { // {{{
+  void ThreadView::register_keys () { //
     keys.title = "Thread View";
 
     keys.register_key ("j", "thread_view.down",
@@ -2322,7 +2321,7 @@ namespace Astroid {
         "Show remote images (warning: approves all requests to remote content!)",
         [&] (Key) {
           show_remote_images = true;
-          log << debug << "tv: show remote images: " << show_remote_images << endl;
+          LOG (debug) << "tv: show remote images: " << show_remote_images;
           reload_images ();
           return true;
         });
@@ -2534,7 +2533,7 @@ namespace Astroid {
           }
 
           if (!tosave.empty()) {
-            log << debug << "tv: saving messages: " << tosave.size() << endl;
+            LOG (debug) << "tv: saving messages: " << tosave.size();
 
             Gtk::FileChooserDialog dialog ("Save messages to folder..",
                 Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER);
@@ -2548,7 +2547,7 @@ namespace Astroid {
               case (Gtk::RESPONSE_OK):
                 {
                   string dir = dialog.get_filename ();
-                  log << info << "tv: saving messages to: " << dir << endl;
+                  LOG (info) << "tv: saving messages to: " << dir;
 
                   for (refptr<Message> m : tosave) {
                     m->save_to (dir);
@@ -2559,7 +2558,7 @@ namespace Astroid {
 
               default:
                 {
-                  log << debug << "tv: save: cancelled." << endl;
+                  LOG (debug) << "tv: save: cancelled.";
                 }
             }
           }
@@ -2712,7 +2711,7 @@ namespace Astroid {
               "Change tags for message:",
               tag_list,
               [&](ustring tgs) {
-                log << debug << "ti: got tags: " << tgs << endl;
+                LOG (debug) << "ti: got tags: " << tgs;
 
                 vector<ustring> tags = VectorUtils::split_and_trim (tgs, ",");
 
@@ -2742,7 +2741,7 @@ namespace Astroid {
 
                 if (add.size () == 0 &&
                     rem.size () == 0) {
-                  log << debug << "ti: nothing to do." << endl;
+                  LOG (debug) << "ti: nothing to do.";
                 } else {
                   main_window->actions->doit (refptr<Action>(new TagAction (refptr<NotmuchTaggable>(new NotmuchMessage(focused_message)), add, rem)));
                 }
@@ -2798,20 +2797,20 @@ namespace Astroid {
           auto cp = Gtk::Clipboard::get (GDK_SELECTION_PRIMARY);
           cp->set_text (focused_message->mid);
 
-          log << info << "tv: " << focused_message->mid << " copied to primary clipboard." << endl;
+          LOG (info) << "tv: " << focused_message->mid << " copied to primary clipboard.";
 
           return true;
         });
 
   }
 
-  // }}}
+  //
 
-  bool ThreadView::element_action (ElementAction a) { // {{{
-    log << debug << "tv: activate item." << endl;
+  bool ThreadView::element_action (ElementAction a) { //
+    LOG (debug) << "tv: activate item.";
 
     if (!(focused_message)) {
-      log << error << "tv: no message has focus yet." << endl;
+      LOG (error) << "tv: no message has focus yet.";
       return true;
     }
 
@@ -2883,7 +2882,7 @@ namespace Astroid {
           if (c->viewable) {
             t = c->viewable_text (false, false);
           } else {
-            log << error << "tv: cannot yank text of non-viewable part" << endl;
+            LOG (error) << "tv: cannot yank text of non-viewable part";
           }
 
           cp->set_text (t);
@@ -2902,7 +2901,7 @@ namespace Astroid {
                   if (c) {
                     c->open ();
                   } else {
-                    log << error << "tv: could not find chunk for element." << endl;
+                    LOG (error) << "tv: could not find chunk for element.";
                   }
 
                 } else if (a == ESave) {
@@ -2913,7 +2912,7 @@ namespace Astroid {
                   if (c) {
                     c->save ();
                   } else {
-                    log << error << "tv: could not find chunk for element." << endl;
+                    LOG (error) << "tv: could not find chunk for element.";
                   }
                 }
               }
@@ -2936,7 +2935,7 @@ namespace Astroid {
 
                     }
                   } else {
-                    log << error << "tv: could not find chunk for element." << endl;
+                    LOG (error) << "tv: could not find chunk for element.";
                   }
 
                 } else if (a == ESave) {
@@ -2947,7 +2946,7 @@ namespace Astroid {
                   if (c) {
                     c->save ();
                   } else {
-                    log << error << "tv: could not find chunk for element." << endl;
+                    LOG (error) << "tv: could not find chunk for element.";
                   }
                 }
 
@@ -2977,7 +2976,7 @@ namespace Astroid {
                   if (c) {
                     c->save ();
                   } else {
-                    log << error << "tv: could not find chunk for element." << endl;
+                    LOG (error) << "tv: could not find chunk for element.";
                   }
                 }
               }
@@ -2994,14 +2993,14 @@ namespace Astroid {
       emit_element_action (state[focused_message].current_element, a);
     }
     return true;
-  } // }}}
+  } // 
 
-  /* focus handling {{{ */
+  /* focus handling  */
 
   void ThreadView::on_scroll_vadjustment_changed () {
     if (in_scroll) {
       in_scroll = false;
-      log << debug << "tv: re-doing scroll." << endl;
+      LOG (debug) << "tv: re-doing scroll.";
 
       if (scroll_arg != "") {
         if (scroll_to_element (scroll_arg, _scroll_when_visible)) {
@@ -3043,14 +3042,14 @@ namespace Astroid {
       double clientY = webkit_dom_element_get_offset_top (e);
       double clientH = webkit_dom_element_get_client_height (e);
 
-      // log << debug << "y = " << clientY << endl;
-      // log << debug << "h = " << clientH << endl;
+      // LOG (debug) << "y = " << clientY;
+      // LOG (debug) << "h = " << clientH;
 
       g_object_unref (e);
 
       if ((clientY < center) && ((clientY + clientH) > center))
       {
-        // log << debug << "message: " << m->date() << " now in view." << endl;
+        // LOG (debug) << "message: " << m->date() << " now in view.";
 
         focused_message = m;
 
@@ -3081,14 +3080,14 @@ namespace Astroid {
     double height   = adj->get_page_size (); // 0 when there is
                                              // no paging.
 
-    //log << debug << "scrolled = " << scrolled << ", height = " << height << endl;
+    //LOG (debug) << "scrolled = " << scrolled << ", height = " << height;
 
     /* check currently focused message */
     bool take_next = false;
 
     /* take first */
     if (!focused_message) {
-      //log << debug << "tv: u_f_t_v: none focused, take first initially." << endl;
+      //LOG (debug) << "tv: u_f_t_v: none focused, take first initially.";
       focused_message = mthread->messages[0];
       update_focus_status ();
     }
@@ -3103,14 +3102,14 @@ namespace Astroid {
 
     g_object_unref (e);
 
-    //log << debug << "y = " << clientY << endl;
-    //log << debug << "h = " << clientH << endl;
+    //LOG (debug) << "y = " << clientY;
+    //LOG (debug) << "h = " << clientH;
 
     // height = 0 if there is no paging: all messages are in view.
     if ((height == 0) || ( (clientY <= (scrolled + height)) && ((clientY + clientH) >= scrolled) )) {
-      //log << debug << "message: " << focused_message->date() << " still in view." << endl;
+      //LOG (debug) << "message: " << focused_message->date() << " still in view.";
     } else {
-      //log << debug << "message: " << focused_message->date() << " out of view." << endl;
+      //LOG (debug) << "message: " << focused_message->date() << " out of view.";
       take_next = true;
     }
 
@@ -3135,8 +3134,8 @@ namespace Astroid {
         double clientY = webkit_dom_element_get_offset_top (e);
         double clientH = webkit_dom_element_get_client_height (e);
 
-        // log << debug << "y = " << clientY << endl;
-        // log << debug << "h = " << clientH << endl;
+        // LOG (debug) << "y = " << clientY;
+        // LOG (debug) << "h = " << clientH;
 
         WebKitDOMDOMTokenList * class_list =
           webkit_dom_element_get_class_list (e);
@@ -3150,7 +3149,7 @@ namespace Astroid {
         if ((!found || cur_position < focused_position) &&
             ( (height == 0) || ((clientY <= (scrolled + height)) && ((clientY + clientH) >= scrolled)) ))
         {
-          // log << debug << "message: " << m->date() << " now in view." << endl;
+          // LOG (debug) << "message: " << m->date() << " now in view.";
 
           if (found) redo_focus_tags = true;
           found = true;
@@ -3273,7 +3272,7 @@ namespace Astroid {
 
       MessageState * s = &(state[focused_message]);
 
-      //log << debug << "focus next: current element: " << s->current_element << " of " << s->elements.size() << endl;
+      //LOG (debug) << "focus next: current element: " << s->current_element << " of " << s->elements.size();
       /* are there any more elements */
       if (s->current_element < (s->elements.size()-1)) {
         /* check if the next element is in full view */
@@ -3312,7 +3311,7 @@ namespace Astroid {
           }
         }
 
-        //log << debug << "focus_next_element: change: " << change_focus << endl;
+        //LOG (debug) << "focus_next_element: change: " << change_focus;
 
         if (change_focus) {
           s->current_element++;
@@ -3352,7 +3351,7 @@ namespace Astroid {
 
       MessageState * s = &(state[focused_message]);
 
-      //log << debug << "focus prev: current elemenet: " << s->current_element << endl;
+      //LOG (debug) << "focus prev: current elemenet: " << s->current_element;
       /* are there any more elements */
       if (s->current_element > 0) {
         /* check if the prev element is in full view */
@@ -3395,7 +3394,7 @@ namespace Astroid {
           }
         }
 
-        //log << debug << "focus_prev_element: change: " << change_focus << endl;
+        //LOG (debug) << "focus_prev_element: change: " << change_focus;
 
         if (change_focus) {
           s->current_element--;
@@ -3426,7 +3425,7 @@ namespace Astroid {
   }
 
   ustring ThreadView::focus_next () {
-    //log << debug << "tv: focus_next." << endl;
+    //LOG (debug) << "tv: focus_next.";
 
     if (edit_mode) return "";
 
@@ -3445,7 +3444,7 @@ namespace Astroid {
   }
 
   ustring ThreadView::focus_previous (bool focus_top) {
-    //log << debug << "tv: focus previous." << endl;
+    //LOG (debug) << "tv: focus previous.";
 
     if (edit_mode) return "";
 
@@ -3473,11 +3472,11 @@ namespace Astroid {
     if (edit_mode) return;
 
     if (!focused_message) {
-      log << warn << "tv: focusing: no message selected for focus." << endl;
+      LOG (warn) << "tv: focusing: no message selected for focus.";
       return;
     }
 
-    log << debug << "tv: focusing: " << m->date () << endl;
+    LOG (debug) << "tv: focusing: " << m->date ();
 
     WebKitDOMDocument * d = webkit_web_view_get_dom_document (webview);
 
@@ -3499,7 +3498,7 @@ namespace Astroid {
      * doesn't work */
 
     if (eid == "") {
-      log << error << "tv: attempted to scroll to unspecified id." << endl;
+      LOG (error) << "tv: attempted to scroll to unspecified id.";
       return false;
 
     }
@@ -3572,9 +3571,9 @@ namespace Astroid {
     }
   }
 
-  /* end focus handeling  }}} */
+  /* end focus handeling   */
 
-  /* message hiding {{{ */
+  /* message hiding  */
   bool ThreadView::is_hidden (refptr<Message> m) {
     ustring mid = "message_" + m->mid;
 
@@ -3646,20 +3645,20 @@ namespace Astroid {
     return wasexpanded;
   }
 
-  /* end message hinding }}} */
+  /* end message hinding  */
 
-  void ThreadView::save_all_attachments () { // {{{
+  void ThreadView::save_all_attachments () { //
     /* save all attachments of current focused message */
-    log << info << "tv: save all attachments.." << endl;
+    LOG (info) << "tv: save all attachments..";
 
     if (!focused_message) {
-      log << warn << "tv: no message focused!" << endl;
+      LOG (warn) << "tv: no message focused!";
       return;
     }
 
     auto attachments = focused_message->attachments ();
     if (attachments.empty ()) {
-      log << warn << "tv: this message has no attachments to save." << endl;
+      LOG (warn) << "tv: this message has no attachments to save.";
       return;
     }
 
@@ -3675,7 +3674,7 @@ namespace Astroid {
       case (Gtk::RESPONSE_OK):
         {
           string dir = dialog.get_filename ();
-          log << info << "tv: saving attachments to: " << dir << endl;
+          LOG (info) << "tv: saving attachments to: " << dir;
 
           /* TODO: check if the file exists and ask to overwrite. currently
            *       we are failing silently (except an error message in the log)
@@ -3689,14 +3688,14 @@ namespace Astroid {
 
       default:
         {
-          log << debug << "tv: save: cancelled." << endl;
+          LOG (debug) << "tv: save: cancelled.";
         }
     }
-  } // }}}
+  } //
 
-  /* general mode stuff {{{ */
+  /* general mode stuff  */
   void ThreadView::grab_focus () {
-    //log << debug << "tv: grab focus" << endl;
+    //LOG (debug) << "tv: grab focus";
     gtk_widget_grab_focus (GTK_WIDGET (webview));
   }
 
@@ -3713,9 +3712,9 @@ namespace Astroid {
     //gtk_grab_remove (GTK_WIDGET (webview));
   }
 
-  /* end general mode stuff }}} */
+  /* end general mode stuff  */
 
-  /* signals {{{ */
+  /* signals  */
   ThreadView::type_signal_ready
     ThreadView::signal_ready ()
   {
@@ -3723,7 +3722,7 @@ namespace Astroid {
   }
 
   void ThreadView::emit_ready () {
-    log << info << "tv: ready emitted." << endl;
+    LOG (info) << "tv: ready emitted.";
     m_signal_ready.emit ();
     ready = true;
   }
@@ -3735,13 +3734,13 @@ namespace Astroid {
   }
 
   void ThreadView::emit_element_action (unsigned int element, ElementAction action) {
-    log << debug << "tv: element action emitted: " << element << ", action: enter" << endl;
+    LOG (debug) << "tv: element action emitted: " << element << ", action: enter";
     m_element_action.emit (element, action);
   }
 
-  /* end signals }}} */
+  /* end signals  */
 
-  /* MessageState  {{{ */
+  /* MessageState   */
   ThreadView::MessageState::MessageState () {
     elements.push_back (Element (Empty, -1));
     current_element = 0;
@@ -3769,9 +3768,9 @@ namespace Astroid {
     }
   }
 
-  /* end MessageState }}} */
+  /* end MessageState  */
 
-  /* Searching {{{ */
+  /* Searching  */
   bool ThreadView::search (Key) {
     reset_search ();
 
@@ -3809,10 +3808,10 @@ namespace Astroid {
         toggle_hidden (m, ToggleShow);
       }
 
-      log << debug << "tv: searching for: " << k << endl;
+      LOG (debug) << "tv: searching for: " << k;
       int n = webkit_web_view_mark_text_matches (webview, k.c_str (), false, 0);
 
-      log << debug << "tv: search, found: " << n << " matches." << endl;
+      LOG (debug) << "tv: search, found: " << n << " matches.";
 
       in_search = (n > 0);
 
@@ -3855,6 +3854,6 @@ namespace Astroid {
     webkit_web_view_search_text (webview, search_q.c_str (), false, false, true);
   }
 
-  /* }}} */
+  /*  */
 }
 

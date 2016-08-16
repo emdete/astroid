@@ -9,7 +9,6 @@
 # include <boost/property_tree/ini_parser.hpp>
 
 # include "config.hh"
-# include "log.hh"
 # include "poll.hh"
 
 using namespace std;
@@ -19,7 +18,7 @@ using boost::property_tree::ptree;
 namespace Astroid {
   Config::Config (bool _test, bool no_load) {
     if (_test) {
-      log << info << "cf: loading test config." << endl;
+      LOG (info) << "cf: loading test config.";
     }
 
     test = _test;
@@ -37,7 +36,7 @@ namespace Astroid {
 
     load_dirs ();
     std_paths.config_file = path(fname);
-    log << info << "cf: loading config: " << fname << endl;
+    LOG (info) << "cf: loading config: " << fname;
     if (!no_load)
       load_config (); // re-sets config_dir to parent of fname
   }
@@ -51,14 +50,14 @@ namespace Astroid {
 
       std_paths.home = cur_path / path("test/test_home");
 
-      log << LogLevel::test << "cf: using home and config_dir directory: " << std_paths.home.c_str () << endl;
+      LOG (debug) << "cf: using home and config_dir directory: " << std_paths.home.c_str ();
 
     } else {
       char * home_c = getenv ("HOME");
-      log << debug << "HOME: " << home_c << endl;
+      LOG (debug) << "HOME: " << home_c;
 
       if (home_c == NULL) {
-        log << error << "cf: HOME environment variable not set." << endl;
+        LOG (error) << "cf: HOME environment variable not set.";
         exit (1);
       }
 
@@ -250,14 +249,14 @@ namespace Astroid {
   }
 
   void Config::write_back_config () {
-    log << warn << "cf: writing back config to: " << std_paths.config_file << endl;
+    LOG (warn) << "cf: writing back config to: " << std_paths.config_file;
 
     write_json (std_paths.config_file.c_str (), config);
   }
 
   void Config::load_config (bool initial) {
     if (test) {
-      log << info << "cf: test config, loading defaults." << endl;
+      LOG (info) << "cf: test config, loading defaults.";
       config = setup_default_config (true);
       config.put ("poll.interval", 0);
       config.put ("accounts.charlie.gpgkey", "gaute@astroidmail.bar");
@@ -266,22 +265,22 @@ namespace Astroid {
       return;
     }
 
-    log << info << "cf: loading: " << std_paths.config_file << endl;
+    LOG (info) << "cf: loading: " << std_paths.config_file;
 
     std_paths.config_dir = absolute(std_paths.config_file.parent_path());
     if (!is_directory(std_paths.config_dir)) {
-      log << warn << "cf: making config dir.." << endl;
+      LOG (warn) << "cf: making config dir..";
       create_directories (std_paths.config_dir);
     }
 
     if (!is_directory(std_paths.runtime_dir)) {
-      log << warn << "cf: making runtime dir.." << endl;
+      LOG (warn) << "cf: making runtime dir..";
       create_directories (std_paths.runtime_dir);
     }
 
     if (!is_regular_file (std_paths.config_file)) {
       if (!initial) {
-        log << warn << "cf: no config, using defaults." << endl;
+        LOG (warn) << "cf: no config, using defaults.";
       }
       config = setup_default_config (true);
       write_back_config ();
@@ -291,7 +290,7 @@ namespace Astroid {
       ptree new_config;
       config = setup_default_config (false);
       read_json (std_paths.config_file.c_str(), new_config);
-      log << info << "cf: version: " << config.get<int>("astroid.config.version") << endl;
+      LOG (info) << "cf: version: " << config.get<int>("astroid.config.version");
 
       merge_ptree (new_config);
 
@@ -327,7 +326,7 @@ namespace Astroid {
 
         } catch (const boost::property_tree::ptree_bad_path &ex) {
 
-          log << warn << "config: setting default save draft path for account: " << kv.first << ", please update!" << endl;
+          LOG (warn) << "config: setting default save draft path for account: " << kv.first << ", please update!";
           ustring key = ustring::compose ("accounts.%1.save_drafts_to", kv.first);
           config.put (key.c_str (), "/home/root/Mail/drafts/");
 
@@ -357,14 +356,14 @@ namespace Astroid {
     }
 
     if (version < 3) {
-      log << warn << "config: 'astroid.notmuch.sent_tags' have been moved to 'mail.sent_tags'" << endl;
+      LOG (warn) << "config: 'astroid.notmuch.sent_tags' have been moved to 'mail.sent_tags'";
 
       config.put ("mail.sent_tags", config.get<string>("astroid.notmuch.sent_tags"));
       config.erase ("astroid.notmuch.sent_tags");
 
       changed = true;
 
-      log << warn << "config: astroid now reads standard notmuch options from notmuch config, it is configured through: 'astroid.notmuch_config' and is now set to the default: ~/.notmuch-config. please validate!" << endl;
+      LOG (warn) << "config: astroid now reads standard notmuch options from notmuch config, it is configured through: 'astroid.notmuch_config' and is now set to the default: ~/.notmuch-config. please validate!";
     }
 
     if (version < 6) {
@@ -424,18 +423,18 @@ namespace Astroid {
     try {
       config.get<string> ("astroid.notmuch.db");
 
-      log << error << "config: option 'astroid.notmuch.db' is deprecated, it is read from notmuch config." << endl;
+      LOG (error) << "config: option 'astroid.notmuch.db' is deprecated, it is read from notmuch config.";
     } catch (const boost::property_tree::ptree_bad_path &ex) { }
 
 
     try {
       config.get<string> ("astroid.notmuch.excluded_tags");
-      log << error << "config: option 'astroid.notmuch.excluded_tags' is deprecated, it is read from notmuch config." << endl;
+      LOG (error) << "config: option 'astroid.notmuch.excluded_tags' is deprecated, it is read from notmuch config.";
     } catch (const boost::property_tree::ptree_bad_path &ex) { }
 
     try {
       config.get<string> ("astroid.notmuch.sent_tags");
-      log << error << "config: option 'astroid.notmuch.sent_tags' is deprecated, it is moved to 'mail.sent_tags'." << endl;
+      LOG (error) << "config: option 'astroid.notmuch.sent_tags' is deprecated, it is moved to 'mail.sent_tags'.";
     } catch (const boost::property_tree::ptree_bad_path &ex) { }
 
     /* generalized editor */
@@ -447,7 +446,7 @@ namespace Astroid {
         string new_gvim = gvim + " -geom 10x10 --servername %2 --socketid %3 " + args + " %1";
 
 
-        log << warn << "config: editor has been generalized, editor.cmd replaces gvim.cmd and gvim.args." << endl;
+        LOG (warn) << "config: editor has been generalized, editor.cmd replaces gvim.cmd and gvim.args.";
 
         config.put<string> ("editor.cmd", new_gvim);
 
@@ -459,7 +458,7 @@ namespace Astroid {
       string gvim = config.get<string> ("editor.gvim.cmd");
       string args = config.get<string> ("editor.gvim.args");
 
-      log << warn << "editor.gvim.cmd and editor.gvim.args are replaced by editor.cmd, and may be removed." << endl;
+      LOG (warn) << "editor.gvim.cmd and editor.gvim.args are replaced by editor.cmd, and may be removed.";
     } catch (const boost::property_tree::ptree_bad_path &ex) { }
 
     if (version < CONFIG_VERSION) {
@@ -468,7 +467,7 @@ namespace Astroid {
     }
 
     if (changed) {
-      log << warn << "cf: missing values in config have been updated with defaults (old version: " << version << ", new: " << CONFIG_VERSION << ")" << endl;
+      LOG (warn) << "cf: missing values in config have been updated with defaults (old version: " << version << ", new: " << CONFIG_VERSION << ")";
     }
 
     return !changed;
